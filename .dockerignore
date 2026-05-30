@@ -1,0 +1,27 @@
+# Python cache — never needed inside a container
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment — the container has its own Python
+venv/
+env/
+.venv/
+
+# Test files — not needed to run the app
+tests/
+pytest.ini
+.pytest_cache/
+
+# Git history — not needed inside the container
+.git/
+.gitignore
+
+# Editor files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store

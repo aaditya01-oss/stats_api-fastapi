@@ -1,0 +1,29 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment — never commit this
+# It's huge and machine-specific
+venv/
+env/
+.venv/
+
+# pytest cache
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Environment variables — could contain secrets
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
