@@ -1,0 +1,36 @@
+# docker-compose.yml
+# Defines all the services (containers) your app needs.
+# Run everything with: docker compose up
+# Stop everything with: docker compose down
+
+version: "3.9"
+
+services:
+
+  # ── Your API ──────────────────────────────────────────────────────
+  api:
+    # build: tells Compose to build from the Dockerfile in current dir
+    # instead of pulling a pre-built image
+    build: .
+
+    # Map port 8000 on your machine to port 8000 in the container
+    ports:
+      - "8000:8000"
+
+    # Automatically restart the container if it crashes
+    restart: unless-stopped
+
+    # Environment variables — injected into the container at runtime
+    # Never hardcode secrets here in real projects (Month 7 covers this)
+    environment:
+      - APP_ENV=development
+
+    # Mount your local code into the container for live reloading
+    # Left side = your machine path, right side = container path
+    # This means code changes reflect immediately without rebuilding
+    volumes:
+      - .:/app
+
+    # Override the Dockerfile CMD for development
+    # --reload makes uvicorn watch for file changes
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

@@ -1,0 +1,51 @@
+# ci.yml — Continuous Integration pipeline
+# Runs automatically on every push and every pull request to main
+
+name: CI
+
+# Triggers: when does this pipeline run?
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    # The type of machine to run on (GitHub provides this for free)
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: checkout your code onto the runner machine
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: install Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Step 3: cache pip downloads
+      # If requirements.txt hasn't changed, skip downloading packages
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      # Step 4: install dependencies
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Step 5: run linter (checks code style)
+      # ruff is faster than flake8 — catches formatting issues
+      - name: Lint with ruff
+        run: |
+          pip install ruff
+          ruff check .
+
+      # Step 6: run all tests
+      # --tb=short shows shorter tracebacks on failure
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
