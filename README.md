@@ -1,3 +1,7 @@
+## 🚀 Live Demo
+**API Docs:** https://statsapi-fastapi-production.up.railway.app/docs
+
+-Deployed on Railway with Docker. Auto-deploys on every push to main via GitHub Actions.
 # Stats API
 
 A production-grade statistics REST API built with FastAPI.
