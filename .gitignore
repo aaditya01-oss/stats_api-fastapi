@@ -27,3 +27,10 @@ Thumbs.db
 # Editor files
 .vscode/
 .idea/
+# Airflow logs — generated automatically, never commit
+logs/
+
+# Airflow generated files
+airflow.cfg
+airflow.db
+standalone_admin_password.txt
