@@ -3,7 +3,6 @@
 # Run everything with: docker compose up
 # Stop everything with: docker compose down
 
-version: "3.9"
 
 services:
 
@@ -52,7 +51,16 @@ services:
       # Persist data even when container restarts
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
-
+  fraud_db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: fraud
+      POSTGRES_PASSWORD: fraud
+      POSTGRES_DB: fraud_db
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
   # ── Apache Airflow ────────────────────────────────────────────────
   airflow:
     image: apache/airflow:2.9.0
@@ -72,7 +80,7 @@ services:
     command: bash -c "airflow db init && airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com && airflow webserver & airflow scheduler"
     restart: unless-stopped
 
-   # ── NEW: MLflow tracking server ───────────────────────────────────
+  # ── NEW: MLflow tracking server ───────────────────────────────────
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.13.0
     ports:
@@ -102,6 +110,29 @@ services:
       - default
     profiles:
       - training
+
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    restart: unless-stopped
 
 # Named volume — persists database data between container restarts
 volumes:

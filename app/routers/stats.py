@@ -12,9 +12,11 @@ you go to services/statistics.py. If you need to change a URL
 or add a new endpoint, you come here.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Security
 from pydantic import BaseModel, field_validator
 from app.services.statistics import StatisticsService
+from fastapi import Depends
+from app.auth import get_current_user
 
 
 # APIRouter is like a mini FastAPI app.
@@ -98,7 +100,7 @@ class NormalResponse(BaseModel):
 # ------------------------------------------------------------------
 
 @router.post("/summary", response_model=StatsResponse)
-def get_summary(request: StatsRequest) -> StatsResponse:
+def get_summary(request: StatsRequest, current_user: str = Security(get_current_user)) -> StatsResponse:
     """
     POST /stats/summary
 
@@ -119,7 +121,7 @@ def get_summary(request: StatsRequest) -> StatsResponse:
 
 
 @router.post("/normal", response_model=NormalResponse)
-def get_normal_distribution(request: DistributionRequest) -> NormalResponse:
+def get_normal_distribution(request: DistributionRequest, current_user: str = Security(get_current_user)) -> NormalResponse:
     """
     POST /stats/normal
 
@@ -145,7 +147,7 @@ def get_normal_distribution(request: DistributionRequest) -> NormalResponse:
 
 
 @router.post("/binomial")
-def get_binomial(k: int, n: int, p: float):
+def get_binomial(k: int, n: int, p: float, current_user: str = Security(get_current_user)):
     """
     POST /stats/binomial?k=3&n=10&p=0.5
 
@@ -170,7 +172,7 @@ def get_binomial(k: int, n: int, p: float):
 
 
 @router.post("/poisson")
-def get_poisson(k: int, lam: float):
+def get_poisson(k: int, lam: float, current_user: str = Security(get_current_user)):
     """
     POST /stats/poisson?k=3&lam=2.5
 
