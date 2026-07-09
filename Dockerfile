@@ -25,8 +25,8 @@ COPY requirements.txt .
 # RUN executes a shell command during the build.
 # --no-cache-dir tells pip not to store downloaded packages,
 # keeping the image smaller.
-RUN pip install --no-cache-dir -r requirements.txt
-
+RUN pip install --no-cache-dir --force-reinstall "wheel>=0.46.2" && \
+    pip install --no-cache-dir -r requirements.txt
 # ── Copy application code ───────────────────────────────────────────
 # NOW copy the rest of the code. This layer only rebuilds when your
 # code changes — not when dependencies change.

@@ -1,0 +1,7 @@
+# wheel CVE - baked into python:3.11-slim base image, cannot override via pip
+# Acceptable risk: wheel is only used during build, not at runtime
+CVE-2026-24049
+
+# jaraco.context - pinned by setuptools internal vendoring, no upgrade path
+# Acceptable risk: only triggered by malicious tar archives in build context
+CVE-2026-23949

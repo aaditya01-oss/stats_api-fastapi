@@ -25,3 +25,5 @@ pytest.ini
 
 # OS files
 .DS_Store
+
+logs/
