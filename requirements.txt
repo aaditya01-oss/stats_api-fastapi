@@ -11,9 +11,9 @@ scikit-learn==1.7.1
 pandas>=2.2.3
 numpy==2.2.6
 kafka-python>=2.2.15
-python-jose[cryptography]
 python-multipart
 python-dotenv
 pip>=26.1
 wheel>=0.46.2
 jaraco.context>=6.1.0
+joserfc>=0.12.0
