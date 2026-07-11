@@ -20,7 +20,7 @@ app = FastAPI(
 app.include_router(stats_router)
 
 
-from fastapi import Depends
+
 
 
 @app.post("/token")

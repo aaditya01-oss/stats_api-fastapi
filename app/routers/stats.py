@@ -15,7 +15,6 @@ or add a new endpoint, you come here.
 from fastapi import APIRouter, HTTPException, Security
 from pydantic import BaseModel, field_validator
 from app.services.statistics import StatisticsService
-from fastapi import Depends
 from app.auth import get_current_user
 
 

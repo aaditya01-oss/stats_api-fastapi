@@ -18,7 +18,6 @@ import json
 import os
 import psycopg2
 import mlflow
-from datetime import datetime
 from kafka import KafkaConsumer
 from dotenv import load_dotenv
 from fraud_detection.model import FraudDetectionModel
@@ -170,7 +169,7 @@ def run_consumer() -> None:
                 )
 
         except KeyboardInterrupt:
-            print(f"\nConsumer stopped.")
+            print("\nConsumer stopped.")
             print(f"Processed: {processed} transactions")
             print(f"Fraud detected: {fraud_count}")
             print(f"Final accuracy: {correct/processed:.2%}" if processed else "")
