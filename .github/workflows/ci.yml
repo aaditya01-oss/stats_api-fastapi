@@ -49,3 +49,33 @@ jobs:
       # --tb=short shows shorter tracebacks on failure
       - name: Run tests
         run: pytest tests/ -v --tb=short
+
+  security:
+    # This job only runs after the test job passes
+    # No point scanning a broken image
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: build the Docker image
+      # We tag it locally — only used for scanning, not pushed anywhere
+      - name: Build Docker image
+        run: docker build -t stats-api:ci .
+
+      # Step 3: run Trivy vulnerability scanner
+      # exit-code: 1 means the pipeline FAILS if CRITICAL or HIGH CVEs found
+      # ignore-unfixed: skip CVEs with no fix available yet
+      # .trivyignore handles known acceptable exceptions
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: stats-api:ci
+          format: table
+          exit-code: 1
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          trivyignores: .trivyignore
