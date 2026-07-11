@@ -14,6 +14,8 @@ jobs:
   test:
     # The type of machine to run on (GitHub provides this for free)
     runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
 
     steps:
       # Step 1: checkout your code onto the runner machine
@@ -48,6 +50,8 @@ jobs:
       # Step 6: run all tests
       # --tb=short shows shorter tracebacks on failure
       - name: Run tests
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
         run: pytest tests/ -v --tb=short
 
   security:
