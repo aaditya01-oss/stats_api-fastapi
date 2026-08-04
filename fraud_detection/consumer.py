@@ -87,6 +87,35 @@ def save_result(result: dict) -> None:
     conn.close()
 
 
+def check_for_drift(fraud_rate: float, baseline: float = 0.05, threshold: float = 2.0) -> None:
+    """
+    Detects model drift by comparing current fraud rate to baseline.
+
+    baseline: expected fraud rate from training (contamination=0.05 = 5%)
+    threshold: how many times above/below baseline triggers an alert
+               2.0 means alert if rate is more than 2x or less than 0.5x baseline
+
+    Why both directions?
+    - Rate too HIGH: model flagging too much → concept drift or fraud surge
+    - Rate too LOW: model flagging too little → evasion attack or model degraded
+    """
+    upper_limit = baseline * threshold        # 0.05 * 2.0 = 0.10 (10%)
+    lower_limit = baseline / threshold        # 0.05 / 2.0 = 0.025 (2.5%)
+
+    if fraud_rate > upper_limit:
+        print(f"\n⚠️  DRIFT ALERT: Fraud rate {fraud_rate:.2%} exceeds {upper_limit:.2%}")
+        print("    Possible causes: concept drift or genuine fraud surge")
+        print("    Action: review recent flagged transactions and consider retraining")
+
+    elif fraud_rate < lower_limit:
+        print(f"\n⚠️  DRIFT ALERT: Fraud rate {fraud_rate:.2%} below {lower_limit:.2%}")
+        print("    Possible causes: evasion attack or model degradation")
+        print("    Action: inspect recent transactions manually and consider retraining")
+
+    else:
+        print(f"    Drift check: OK (fraud rate {fraud_rate:.2%} within normal range)")
+        
+
 def run_consumer() -> None:
     """
     Main consumer loop — reads transactions from Kafka
@@ -156,6 +185,7 @@ def run_consumer() -> None:
                     print(f"\n[Stats after {processed} transactions]")
                     print(f"  Accuracy:   {accuracy:.2%}")
                     print(f"  Fraud rate: {fraud_rate:.2%}")
+                    check_for_drift(fraud_rate)
 
                 # Print result
                 icon = "🚨" if result["is_fraud"] else "✓"
