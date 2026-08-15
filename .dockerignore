@@ -27,3 +27,6 @@ pytest.ini
 .DS_Store
 
 logs/
+
+.env
+.env.local
