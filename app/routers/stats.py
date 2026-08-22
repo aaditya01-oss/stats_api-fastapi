@@ -11,8 +11,9 @@ Notice: zero math logic here. If you need to fix a calculation,
 you go to services/statistics.py. If you need to change a URL
 or add a new endpoint, you come here.
 """
-
-from fastapi import APIRouter, HTTPException, Security
+from app.limiter import limiter
+from fastapi import Request
+from fastapi import APIRouter, Depends, HTTPException, Security
 from pydantic import BaseModel, field_validator
 from app.services.statistics import StatisticsService
 from app.auth import get_current_user
@@ -99,7 +100,8 @@ class NormalResponse(BaseModel):
 # ------------------------------------------------------------------
 
 @router.post("/summary", response_model=StatsResponse)
-def get_summary(request: StatsRequest, current_user: str = Security(get_current_user)) -> StatsResponse:
+@limiter.limit("30/minute")  # 30 requests per minute per IP
+def get_summary(request: Request, payload: StatsRequest, current_user: str = Depends(get_current_user)) -> StatsResponse:
     """
     POST /stats/summary
 
@@ -112,7 +114,7 @@ def get_summary(request: StatsRequest, current_user: str = Security(get_current_
     response_model=StatsResponse tells FastAPI what the
     response shape is — it uses this for docs and validation.
     """
-    svc = StatisticsService(request.numbers)
+    svc = StatisticsService(payload.numbers)
     result = svc.summary()
     return StatsResponse(**result)
     # **result unpacks the dictionary into keyword arguments:
@@ -120,7 +122,8 @@ def get_summary(request: StatsRequest, current_user: str = Security(get_current_
 
 
 @router.post("/normal", response_model=NormalResponse)
-def get_normal_distribution(request: DistributionRequest, current_user: str = Security(get_current_user)) -> NormalResponse:
+@limiter.limit("30/minute")
+def get_normal_distribution(request: Request, request_body: DistributionRequest, current_user: str = Depends(get_current_user)) -> NormalResponse:
     """
     POST /stats/normal
 
@@ -128,8 +131,8 @@ def get_normal_distribution(request: DistributionRequest, current_user: str = Se
     Returns: both PDF and CDF values for that point on the distribution.
     """
     try:
-        pdf = StatisticsService.normal_pdf(request.x, request.mu, request.sigma)
-        cdf = StatisticsService.normal_cdf(request.x, request.mu, request.sigma)
+        pdf = StatisticsService.normal_pdf(request_body.x, request_body.mu, request_body.sigma)
+        cdf = StatisticsService.normal_cdf(request_body.x, request_body.mu, request_body.sigma)
     except ValueError as e:
         # If the service raises a ValueError (e.g. sigma <= 0),
         # we catch it here and return a proper HTTP 400 error
@@ -137,16 +140,17 @@ def get_normal_distribution(request: DistributionRequest, current_user: str = Se
         raise HTTPException(status_code=400, detail=str(e))
 
     return NormalResponse(
-        x=request.x,
-        mu=request.mu,
-        sigma=request.sigma,
+        x=request_body.x,
+        mu=request_body.mu,
+        sigma=request_body.sigma,
         pdf=pdf,
         cdf=cdf,
     )
 
 
 @router.post("/binomial")
-def get_binomial(k: int, n: int, p: float, current_user: str = Security(get_current_user)):
+@limiter.limit("30/minute")
+def get_binomial(request: Request, k: int, n: int, p: float, current_user: str = Depends(get_current_user)):
     """
     POST /stats/binomial?k=3&n=10&p=0.5
 
@@ -171,7 +175,8 @@ def get_binomial(k: int, n: int, p: float, current_user: str = Security(get_curr
 
 
 @router.post("/poisson")
-def get_poisson(k: int, lam: float, current_user: str = Security(get_current_user)):
+@limiter.limit("30/minute")
+def get_poisson(request: Request, k: int, lam: float, current_user: str = Depends(get_current_user)):
     """
     POST /stats/poisson?k=3&lam=2.5
 
