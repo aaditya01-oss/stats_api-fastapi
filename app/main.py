@@ -17,6 +17,8 @@ app = FastAPI(
     description="A production-grade statistics API built with FastAPI.",
     version="1.0.0",
 )
+from app.logger import RequestLoggingMiddleware
+app.add_middleware(RequestLoggingMiddleware)
 # Rate limiter — uses client IP address as the key
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
