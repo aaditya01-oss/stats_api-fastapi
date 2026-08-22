@@ -18,6 +18,11 @@ from pydantic import BaseModel
 from app.proxy import process_request
 from app.logger import init_db, get_recent_logs, get_stats, log_request
 from app.scorer import PromptScorer
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
+
+# After app = FastAPI(...)
 
 
 app = FastAPI(
@@ -25,7 +30,11 @@ app = FastAPI(
     description="A proxy server that intercepts LLM requests and blocks prompt injection attacks.",
     version="1.0.0",
 )
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
+@app.get("/")
+def serve_ui():
+    return FileResponse("static/index.html")
 # Initialize database on startup
 @app.on_event("startup")
 async def startup():

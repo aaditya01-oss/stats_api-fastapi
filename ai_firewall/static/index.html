@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Firewall — Prompt Injection Detection</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0f;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 8px;
+        }
+
+        header h1 span {
+            color: #6366f1;
+        }
+
+        header p {
+            color: #94a3b8;
+            font-size: 1rem;
+        }
+
+        .card {
+            background: #13131a;
+            border: 1px solid #1e1e2e;
+            border-radius: 12px;
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+
+        .card h2 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin-bottom: 16px;
+        }
+
+        textarea {
+            width: 100%;
+            background: #0a0a0f;
+            border: 1px solid #1e1e2e;
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 0.95rem;
+            padding: 14px;
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: #6366f1;
+        }
+
+        button {
+            margin-top: 14px;
+            width: 100%;
+            padding: 12px;
+            background: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover { background: #4f46e5; }
+        button:disabled { background: #374151; cursor: not-allowed; }
+
+        .result {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .result-box {
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .result-box.allow {
+            background: #052e16;
+            border: 1px solid #166534;
+        }
+
+        .result-box.block {
+            background: #2d0a0a;
+            border: 1px solid #991b1b;
+        }
+
+        .result-icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .result-decision {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .allow .result-decision { color: #4ade80; }
+        .block .result-decision { color: #f87171; }
+
+        .result-details {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .score-bar-container {
+            margin-top: 16px;
+        }
+
+        .score-bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+
+        .score-bar {
+            height: 6px;
+            background: #1e1e2e;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .score-fill.safe { background: #4ade80; }
+        .score-fill.warning { background: #fbbf24; }
+        .score-fill.danger { background: #f87171; }
+
+        .threshold-marker {
+            position: relative;
+            height: 12px;
+            margin-top: 2px;
+        }
+
+        .threshold-line {
+            position: absolute;
+            left: 70%;
+            top: 0;
+            height: 12px;
+            width: 2px;
+            background: #6366f1;
+        }
+
+        .threshold-label {
+            position: absolute;
+            left: 71%;
+            top: 0;
+            font-size: 0.7rem;
+            color: #6366f1;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 8px 12px;
+            color: #64748b;
+            font-weight: 500;
+            border-bottom: 1px solid #1e1e2e;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #0f0f17;
+            color: #cbd5e1;
+        }
+
+        tr:last-child td { border-bottom: none; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge.allow { background: #052e16; color: #4ade80; }
+        .badge.block { background: #2d0a0a; color: #f87171; }
+
+        .loading { opacity: 0.6; }
+
+        .stats-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-box {
+            flex: 1;
+            background: #13131a;
+            border: 1px solid #1e1e2e;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #f8fafc;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #374151;
+            padding: 24px;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <header>
+            <h1>🛡️ <span>AI</span> Firewall</h1>
+            <p>Real-time prompt injection detection powered by NLP</p>
+        </header>
+
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="stat-number" id="total-count">—</div>
+                <div class="stat-label">Total Requests</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" id="block-count">—</div>
+                <div class="stat-label">Blocked</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" id="block-rate">—</div>
+                <div class="stat-label">Block Rate</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" id="avg-score">—</div>
+                <div class="stat-label">Avg Score</div>
+            </div>
+        </div>
+
+        <!-- Input Card -->
+        <div class="card">
+            <h2>Test a Prompt</h2>
+            <textarea id="prompt-input" placeholder="Enter any prompt to test against the firewall..."></textarea>
+            <button id="analyze-btn" onclick="analyzePrompt()">Analyze Prompt</button>
+
+            <!-- Result -->
+            <div class="result" id="result">
+                <div class="result-box" id="result-box">
+                    <div class="result-icon" id="result-icon"></div>
+                    <div>
+                        <div class="result-decision" id="result-decision"></div>
+                        <div class="result-details" id="result-details"></div>
+                    </div>
+                </div>
+
+                <div class="score-bar-container">
+                    <div class="score-bar-label">
+                        <span>Risk Score</span>
+                        <span id="score-value"></span>
+                    </div>
+                    <div class="score-bar">
+                        <div class="score-fill" id="score-fill"></div>
+                    </div>
+                    <div class="threshold-marker">
+                        <div class="threshold-line"></div>
+                        <div class="threshold-label">threshold 0.7</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card">
+            <h2>Recent Activity</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Decision</th>
+                        <th>Score</th>
+                        <th>Method</th>
+                        <th>Prompt</th>
+                    </tr>
+                </thead>
+                <tbody id="log-table">
+                    <tr>
+                        <td colspan="4" class="empty-state">No activity yet — test a prompt above</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        const API_URL = '';  // empty = same origin (relative URL)
+
+        async function analyzePrompt() {
+            const prompt = document.getElementById('prompt-input').value.trim();
+            if (!prompt) return;
+
+            const btn = document.getElementById('analyze-btn');
+            btn.disabled = true;
+            btn.textContent = 'Analyzing...';
+
+            try {
+                const response = await fetch(`${API_URL}/test`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+
+                const data = await response.json();
+                showResult(data);
+                await loadStats();
+                await loadLogs();
+            } catch (err) {
+                alert('Error connecting to AI Firewall API');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Analyze Prompt';
+            }
+        }
+
+        function showResult(data) {
+            const resultDiv = document.getElementById('result');
+            const box = document.getElementById('result-box');
+            const icon = document.getElementById('result-icon');
+            const decision = document.getElementById('result-decision');
+            const details = document.getElementById('result-details');
+            const scoreFill = document.getElementById('score-fill');
+            const scoreValue = document.getElementById('score-value');
+
+            const isBlock = data.decision === 'BLOCK';
+
+            box.className = `result-box ${isBlock ? 'block' : 'allow'}`;
+            icon.textContent = isBlock ? '🚨' : '✅';
+            decision.textContent = isBlock ? 'BLOCKED' : 'ALLOWED';
+            details.textContent = `Detection: ${data.detection_method} | Rule match: ${data.rule_match}`;
+
+            const score = data.score;
+            const pct = Math.round(score * 100);
+            scoreValue.textContent = score.toFixed(4);
+            scoreFill.style.width = `${pct}%`;
+            scoreFill.className = `score-fill ${score < 0.5 ? 'safe' : score < 0.7 ? 'warning' : 'danger'}`;
+
+            resultDiv.style.display = 'block';
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch(`${API_URL}/audit/stats`);
+                const data = await res.json();
+                document.getElementById('total-count').textContent = data.total_requests;
+                document.getElementById('block-count').textContent = data.total_blocked;
+                document.getElementById('block-rate').textContent = `${Math.round(data.block_rate * 100)}%`;
+                document.getElementById('avg-score').textContent = data.average_score.toFixed(2);
+            } catch (err) {
+                console.error('Failed to load stats');
+            }
+        }
+
+        async function loadLogs() {
+            try {
+                const res = await fetch(`${API_URL}/audit?limit=10`);
+                const data = await res.json();
+                const tbody = document.getElementById('log-table');
+
+                if (!data.logs || data.logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No activity yet</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.logs.map(log => `
+                    <tr>
+                        <td><span class="badge ${log.decision.toLowerCase()}">${log.decision}</span></td>
+                        <td>${log.score.toFixed(3)}</td>
+                        <td>${log.blocked ? 'rule/semantic' : 'passed'}</td>
+                        <td>${log.prompt}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Failed to load logs');
+            }
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('prompt-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) analyzePrompt();
+        });
+
+        // Load stats on page load
+        loadStats();
+        loadLogs();
+        setInterval(loadStats, 30000); // refresh stats every 30s
+    </script>
+</body>
+</html>
