@@ -64,10 +64,13 @@ A real-time ML pipeline that scores transactions for fraudulent behaviour
 as they arrive.
 
 **Architecture:**
+**Architecture:**
+```
 Transaction Producer → Kafka Topic → Consumer → Isolation Forest → PostgreSQL
-↓
-Drift Monitor
-Velocity Checker
+                                                      ↓
+                                              Drift Monitor
+                                              Velocity Checker
+```
 
 **Tech stack:**
 - Apache Kafka — real-time message streaming
@@ -96,12 +99,13 @@ A proxy server that intercepts LLM requests and blocks prompt injection
 attacks before they reach the model.
 
 **Architecture:**
-User → [AI Firewall Proxy] → LLM API
+```
+User →                      [AI Firewall Proxy] →      LLM API
 ↓
 Rule-based detector (regex)
 Semantic scorer (NLP)
 Audit logger (SQLite)
-
+```
 
 **Tech stack:**
 - FastAPI proxy server
